@@ -1,0 +1,2017 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <meta name="theme-color" content="#242526" />
+  <title>NumisMusée — Catálogo Numismático · Jesús De la Torre</title>
+
+  <!-- Tipografías: Editorial Serif (Lora / Cormorant Garamond) + Tabular Sans (Lato) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Lato:wght@400;700;900&family=Lora:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            beigeMuseo: '#F5EFE6',
+            beigeCard: '#EFE6D8',
+            grafito: '#242526',
+            grafitoClaro: '#2F3133',
+            oro: '#C5A059',
+            oroHover: '#D4B26A',
+            textoClaro: '#F3F1ED',
+            grisSecundario: '#A8A59E'
+          },
+          fontFamily: {
+            serifEditorial: ['"Lora"', '"Cormorant Garamond"', 'Georgia', 'serif'],
+            tituloMuseo: ['"Cormorant Garamond"', '"Lora"', 'Georgia', 'serif'],
+            sansTabular: ['"Lato"', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- D3.js & TopoJSON para Planisferio Interactivo -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+
+  <!-- jsPDF para exportación PDF directa sin popups bloqueados por Google Sites -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    :root {
+      --bg-beige: #F5EFE6;
+      --bg-grafito: #242526;
+      --border-oro: #C5A059;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-beige);
+      color: #1E1F20;
+      font-family: 'Lato', sans-serif;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* Cifras tabulares alineadas para años, pesos, precios y medidas */
+    .tabular-nums-strict {
+      font-family: 'Lato', sans-serif;
+      font-variant-numeric: tabular-nums lining-nums;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+    }
+
+    .font-editorial {
+      font-family: 'Lora', 'Cormorant Garamond', Georgia, serif;
+    }
+
+    .font-museo {
+      font-family: 'Cormorant Garamond', 'Lora', Georgia, serif;
+    }
+
+    /* Paneles estilo vitrina de museo */
+    .panel-grafito {
+      background-color: #242526;
+      color: #F3F1ED;
+      border: 1.5px solid #C5A059;
+      border-radius: 14px;
+      box-shadow: 0 6px 18px rgba(36, 37, 38, 0.14);
+    }
+
+    .btn-oro {
+      background-color: #C5A059;
+      color: #1B1C1D;
+      font-weight: 700;
+      border-radius: 9999px;
+      transition: all 0.18s ease;
+    }
+    .btn-oro:hover {
+      background-color: #D4B26A;
+      transform: translateY(-1px);
+    }
+    .btn-oro:active {
+      transform: scale(0.98);
+    }
+
+    .btn-secundario {
+      background-color: #E2DDD5;
+      color: #242526;
+      font-weight: 700;
+      border: 1px solid #C8C1B4;
+      border-radius: 9999px;
+      transition: all 0.18s ease;
+    }
+    .btn-secundario:hover {
+      background-color: #D6CFC3;
+    }
+
+    /* Scrollbar sutil */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #EAE2D6;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #B89B5E;
+      border-radius: 999px;
+    }
+
+    /* Ajustes específicos cuando corre incrustado en iframe de Google Sites */
+    body.in-iframe .app-shell {
+      min-height: 100dvh;
+    }
+
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background: #FFFFFF !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="app-shell flex flex-col min-h-[100dvh] max-w-3xl mx-auto bg-beigeMuseo relative">
+    <!-- Cabecera superior -->
+    <header class="panel-grafito mx-3 mt-3 px-4 py-3 flex items-center justify-between no-print">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full border-2 border-oro bg-grafitoClaro flex items-center justify-center text-oro font-museo font-bold text-xl shadow-inner">
+          N
+        </div>
+        <div>
+          <h1 class="font-museo text-xl sm:text-2xl font-bold tracking-wide text-oro leading-tight">
+            NumisMusée
+          </h1>
+          <p class="text-[11px] text-grisSecundario tracking-wider uppercase">
+            Colección · Jesús De la Torre
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="navigate('stats')" class="px-3 py-1.5 text-xs btn-secundario flex items-center gap-1.5" title="Estadísticas e Informes">
+          <span>📊</span>
+          <span class="hidden sm:inline">Informes</span>
+        </button>
+        <button onclick="navigate('virtual')" class="px-3 py-1.5 text-xs btn-oro flex items-center gap-1.5" title="Visita Virtual">
+          <span>🏛️</span>
+          <span>Visita virtual</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Contenido principal dinámico -->
+    <main id="main-content" class="flex-1 px-3 pt-3 pb-24">
+      <!-- Se renderiza por JS -->
+    </main>
+
+    <!-- Barra de navegación inferior fija (sticky para compatibilidad total con Google Sites iframe) -->
+    <nav class="sticky bottom-0 z-40 mx-3 mb-2 panel-grafito px-1 py-1.5 grid grid-cols-5 gap-1 no-print" aria-label="Navegación principal">
+      <button onclick="navigate('home')" id="nav-home" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-xs transition">
+        <span class="text-base mb-0.5">🏛️</span>
+        <span>Inicio</span>
+      </button>
+      <button onclick="navigate('collection')" id="nav-collection" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-xs transition">
+        <span class="text-base mb-0.5">🪙</span>
+        <span>Colección</span>
+      </button>
+      <button onclick="navigate('add')" id="nav-add" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-xs transition">
+        <span class="text-base mb-0.5">➕</span>
+        <span>Añadir</span>
+      </button>
+      <button onclick="navigate('search')" id="nav-search" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-xs transition">
+        <span class="text-base mb-0.5">🔍</span>
+        <span>Buscar</span>
+      </button>
+      <button onclick="navigate('settings')" id="nav-settings" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-xs transition">
+        <span class="text-base mb-0.5">⚙️</span>
+        <span>Ajustes</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Modal de vista ampliada de fotografía -->
+  <div id="image-modal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeImageModal()">
+    <div class="relative max-w-lg w-full panel-grafito p-3" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center mb-2 px-1">
+        <span id="image-modal-title" class="font-museo text-lg text-oro font-bold">Vista ampliada</span>
+        <button onclick="closeImageModal()" class="text-textoClaro hover:text-oro text-xl font-bold px-2">✕</button>
+      </div>
+      <div class="bg-black rounded-lg overflow-hidden flex items-center justify-center max-h-[75dvh]">
+        <img id="image-modal-src" src="" alt="Detalle ampliado" class="max-h-[72dvh] w-auto object-contain" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de aviso de duplicados -->
+  <div id="duplicate-modal" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="max-w-md w-full panel-grafito p-5">
+      <div class="flex items-center gap-2 text-oro mb-2">
+        <span class="text-2xl">⚠️</span>
+        <h3 class="font-museo text-xl font-bold">Posible pieza duplicada</h3>
+      </div>
+      <p id="duplicate-modal-text" class="text-sm text-textoClaro/90 mb-4 leading-relaxed"></p>
+      <div class="flex flex-col sm:flex-row gap-2 justify-end">
+        <button onclick="resolveDuplicate('cancel')" class="btn-secundario px-4 py-2 text-xs">Revisar formulario</button>
+        <button onclick="resolveDuplicate('increment')" class="btn-secundario px-4 py-2 text-xs border-oro">Sumar +1 al existente</button>
+        <button onclick="resolveDuplicate('new')" class="btn-oro px-4 py-2 text-xs">Guardar como nueva ficha</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast de notificación -->
+  <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden panel-grafito px-4 py-2.5 text-sm text-oro font-semibold shadow-xl"></div>
+
+  <script>
+    /*************************************************************************
+     * 1. DETECCIÓN DE ENTORNO GOOGLE SITES (IFRAME) & RESIZE OBSERVER
+     *************************************************************************/
+    const IS_IFRAME = (() => {
+      try { return window.self !== window.top; } catch (e) { return true; }
+    })();
+
+    if (IS_IFRAME) {
+      document.body.classList.add('in-iframe');
+    }
+
+    // Notificar altura al contenedor padre si el embed lo escucha
+    const notifyParentHeight = () => {
+      if (!IS_IFRAME) return;
+      try {
+        const height = document.documentElement.scrollHeight;
+        window.parent.postMessage({ type: 'numismusee-resize', height }, '*');
+      } catch (e) {}
+    };
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(notifyParentHeight).observe(document.body);
+    }
+
+    /*************************************************************************
+     * 2. ALMACENAMIENTO LOCAL HÍBRIDO (IndexedDB + Fallback localStorage)
+     *************************************************************************/
+    const DB_NAME = 'NumisMuseeDB_JDL';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'pieces';
+    const LS_BACKUP_KEY = 'numismusee_fallback_pieces_v1';
+
+    let storageMode = 'IndexedDB (Local)';
+    let dbInstance = null;
+
+    function openDatabase() {
+      return new Promise((resolve) => {
+        if (!window.indexedDB) {
+          storageMode = 'localStorage (Modo Iframe)';
+          resolve(null);
+          return;
+        }
+        try {
+          const req = indexedDB.open(DB_NAME, DB_VERSION);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+              db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            }
+          };
+          req.onsuccess = (e) => {
+            dbInstance = e.target.result;
+            storageMode = IS_IFRAME ? 'IndexedDB + Respaldo Local (Google Sites)' : 'IndexedDB (Dispositivo Local)';
+            resolve(dbInstance);
+          };
+          req.onerror = () => {
+            storageMode = 'localStorage (Respaldo Iframe)';
+            resolve(null);
+          };
+        } catch (err) {
+          storageMode = 'localStorage (Respaldo Iframe)';
+          resolve(null);
+        }
+      });
+    }
+
+    async function loadAllPieces() {
+      await openDatabase();
+      if (dbInstance) {
+        return new Promise((resolve) => {
+          try {
+            const tx = dbInstance.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.getAll();
+            req.onsuccess = () => {
+              const res = req.result || [];
+              if (res.length > 0) {
+                resolve(res);
+              } else {
+                // Comprobar si hay respaldo en localStorage
+                const ls = loadFromLocalStorage();
+                resolve(ls);
+              }
+            };
+            req.onerror = () => resolve(loadFromLocalStorage());
+          } catch (e) {
+            resolve(loadFromLocalStorage());
+          }
+        });
+      }
+      return loadFromLocalStorage();
+    }
+
+    function loadFromLocalStorage() {
+      try {
+        const raw = localStorage.getItem(LS_BACKUP_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    async function persistAllPieces(piecesArray) {
+      // Guardar espejo ligero o completo en localStorage como seguridad extra en Google Sites
+      try {
+        localStorage.setItem(LS_BACKUP_KEY, JSON.stringify(piecesArray));
+      } catch (e) {
+        // Si supera cuota de localStorage por imágenes pesadas, guardamos metadatos sin base64 largo
+        try {
+          const light = piecesArray.map(p => ({
+            ...p,
+            obverseImg: p.obverseImg && p.obverseImg.length > 150000 ? '' : p.obverseImg,
+            reverseImg: p.reverseImg && p.reverseImg.length > 150000 ? '' : p.reverseImg
+          }));
+          localStorage.setItem(LS_BACKUP_KEY, JSON.stringify(light));
+        } catch (_) {}
+      }
+
+      if (!dbInstance) return;
+      return new Promise((resolve) => {
+        try {
+          const tx = dbInstance.transaction(STORE_NAME, 'readwrite');
+          const store = tx.objectStore(STORE_NAME);
+          store.clear();
+          piecesArray.forEach(item => store.put(item));
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => resolve(false);
+        } catch (e) {
+          resolve(false);
+        }
+      });
+    }
+
+    /*************************************************************************
+     * 3. DATOS INICIALES DE EJEMPLO (SOLO SI LA BASE ESTÁ VACÍA POR 1ª VEZ)
+     *************************************************************************/
+    const INITIAL_FLAG_KEY = 'numismusee_initialized_v1';
+
+    function makePlaceholderCoinSVG(title, subtitle, bg = '#3A3B3D') {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320">
+        <rect width="320" height="320" fill="#1C1D1E"/>
+        <circle cx="160" cy="160" r="132" fill="${bg}" stroke="#C5A059" stroke-width="6"/>
+        <circle cx="160" cy="160" r="120" fill="none" stroke="#C5A059" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <text x="160" y="150" text-anchor="middle" fill="#F3F1ED" font-family="Georgia, serif" font-size="22" font-weight="bold">${title}</text>
+        <text x="160" y="182" text-anchor="middle" fill="#C5A059" font-family="sans-serif" font-size="14">${subtitle}</text>
+      </svg>`;
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
+
+    const SAMPLE_PIECES = [
+      {
+        id: 'pieza-demo-1',
+        type: 'Moneda',
+        customType: '',
+        country: 'España',
+        year: '1870',
+        denomination: '2 Pesetas (100 Piezas en Kilogramo)',
+        faceValue: '2 PTA',
+        grade: 'BC',
+        quantity: 1,
+        composition: 'Plata .835 (10,00 g · 27 mm)',
+        mint: 'Madrid (Estrellas 6 puntas · L.M. / S.N.M.)',
+        purchasePrice: 22.00,
+        estimatedValue: 28.00,
+        provenance: 'Numismática Granada',
+        notes: 'Gobierno Provisional. Alegoría de Hispania recostada con rama de olivo.',
+        obverseImg: makePlaceholderCoinSVG('ESPAÑA · 1870', 'Anverso · Hispania'),
+        reverseImg: makePlaceholderCoinSVG('2 PESETAS', 'Reverso · Escudo'),
+        createdAt: '2026-10-15T10:00:00Z'
+      }
+    ];
+
+    /*************************************************************************
+     * 4. ESTADO GLOBAL DE LA APLICACIÓN
+     *************************************************************************/
+    const GRADES = ['FDC', 'PROOF', 'SC', 'EBC', 'MBC', 'BC', 'RC', 'MC', 'DVC'];
+
+    const GRADE_DESCRIPTIONS = {
+      'FDC': 'Flor de Cuño — Acuñación perfecta, brillo original intacto sin marcas.',
+      'PROOF': 'Fondo Espejo — Acuñación especial con cospeles pulidos y relieve mate.',
+      'SC': 'Sin Circular — No ha circulado; conserva todo su relieve y brillo.',
+      'EBC': 'Excelente Buena Conservación — Mínimo desgaste en los puntos más altos.',
+      'MBC': 'Muy Buena Conservación — Desgaste moderado por circulación; detalles nítidos.',
+      'BC': 'Buena Conservación — Desgaste evidente; leyendas y motivos principales legibles.',
+      'RC': 'Regular Conservación — Relieves muy gastados; identificación parcial.',
+      'MC': 'Mala Conservación — Muy deteriorada o corroída.',
+      'DVC': 'Deficiente / Valor Casi Nulo — Pieza extremadamente gastada o mutilada.'
+    };
+
+    let state = {
+      view: 'home', // home | collection | detail | add | search | stats | settings | virtual
+      pieces: [],
+      selectedPieceId: null,
+      editingPieceId: null,
+      collectionTab: 'Todos', // Todos | Moneda | Billete | Especiales
+      searchFilters: {
+        text: '',
+        country: '',
+        type: '',
+        grade: '',
+        composition: '',
+        yearFrom: '',
+        yearTo: '',
+        sortBy: 'createdAt_desc'
+      },
+      draftForm: null,
+      pendingDuplicateAction: null
+    };
+
+    /*************************************************************************
+     * 5. NORMALIZACIÓN CARTOGRÁFICA PARA PLANISFERIO INTERACTIVO
+     *************************************************************************/
+    const COUNTRY_TO_ISO_NUM = {
+      'espana': '724', 'spain': '724', 'reino de espana': '724',
+      'hungria': '348', 'hungary': '348', 'magyarorszag': '348',
+      'francia': '250', 'france': '250',
+      'portugal': '620',
+      'italia': '380', 'italy': '380',
+      'alemania': '276', 'germany': '276', 'deutschland': '276',
+      'reino unido': '826', 'united kingdom': '826', 'gran bretana': '826', 'inglaterra': '826',
+      'estados unidos': '840', 'eeuu': '840', 'usa': '840', 'united states': '840', 'united states of america': '840',
+      'mexico': '484', 'mejico': '484',
+      'argentina': '032',
+      'colombia': '170',
+      'peru': '604',
+      'chile': '152',
+      'brasil': '076', 'brazil': '076',
+      'venezuela': '862',
+      'cuba': '192',
+      'marruecos': '504', 'morocco': '504',
+      'suiza': '756', 'switzerland': '756',
+      'austria': '040',
+      'belgica': '056', 'belgium': '056',
+      'paises bajos': '528', 'holanda': '528', 'netherlands': '528',
+      'grecia': '300', 'greece': '300',
+      'polonia': '616', 'poland': '616',
+      'rumania': '642', 'romania': '642',
+      'rusia': '643', 'russia': '643', 'urss': '643',
+      'japon': '392', 'japan': '392',
+      'china': '156',
+      'india': '356',
+      'canada': '124',
+      'australia': '036',
+      'egipto': '818', 'egypt': '818',
+      'turquia': '792', 'turkey': '792',
+      'suecia': '752', 'sweden': '752',
+      'noruega': '578', 'norway': '578',
+      'dinamarca': '208', 'denmark': '208',
+      'irlanda': '372', 'ireland': '372',
+      'republica checa': '203', 'chequia': '203', 'czechia': '203', 'checoslovaquia': '203'
+    };
+
+    const MAP_HIGHLIGHT_PALETTE = [
+      '#C5A059', '#3B82F6', '#10B981', '#E11D48', '#8B5CF6',
+      '#F59E0B', '#06B6D4', '#EC4899', '#84CC16', '#F97316',
+      '#6366F1', '#14B8A6'
+    ];
+
+    function normalizeStr(str) {
+      return (str || '')
+        .toString()
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    }
+
+    function normalizeCountryToIsoNum(countryName) {
+      const norm = normalizeStr(countryName);
+      if (!norm) return null;
+      if (COUNTRY_TO_ISO_NUM[norm]) return COUNTRY_TO_ISO_NUM[norm];
+      for (const [key, code] of Object.entries(COUNTRY_TO_ISO_NUM)) {
+        if (norm.includes(key) || key.includes(norm)) return code;
+      }
+      return null;
+    }
+
+    function getCountryColor(countryName) {
+      const norm = normalizeStr(countryName);
+      let hash = 0;
+      for (let i = 0; i < norm.length; i++) {
+        hash = norm.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      return MAP_HIGHLIGHT_PALETTE[Math.abs(hash) % MAP_HIGHLIGHT_PALETTE.length];
+    }
+
+    /*************************************************************************
+     * 6. PROCESAMIENTO DE IMÁGENES, GIRO Y CATALOGACIÓN INTELIGENTE
+     *************************************************************************/
+    function compressAndReadImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const MAX_SIDE = 900;
+            let w = img.width;
+            let h = img.height;
+            if (w > MAX_SIDE || h > MAX_SIDE) {
+              if (w > h) {
+                h = Math.round((h * MAX_SIDE) / w);
+                w = MAX_SIDE;
+              } else {
+                w = Math.round((w * MAX_SIDE) / h);
+                h = MAX_SIDE;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.82));
+          };
+          img.onerror = reject;
+          img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function rotateBase64Image(dataUrl, degrees) {
+      return new Promise((resolve) => {
+        if (!dataUrl || degrees % 360 === 0) {
+          resolve(dataUrl);
+          return;
+        }
+        const img = new Image();
+        img.onload = () => {
+          const rad = (degrees * Math.PI) / 180;
+          const swap = Math.abs(degrees % 180) === 90;
+          const canvas = document.createElement('canvas');
+          canvas.width = swap ? img.height : img.width;
+          canvas.height = swap ? img.width : img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.rotate(rad);
+          ctx.drawImage(img, -img.width / 2, -img.height / 2);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
+
+    // Análisis de proporción y contraste para orientar automáticamente monedas/billetes
+    function autoOrientImage(dataUrl, expectedType) {
+      return new Promise((resolve) => {
+        if (!dataUrl) { resolve(dataUrl); return; }
+        const img = new Image();
+        img.onload = async () => {
+          const ratio = img.width / img.height;
+          // Si es billete (formato apaisado natural) y la foto entró vertical, rotar 90°
+          if (expectedType === 'Billete' && ratio < 0.85) {
+            const rotated = await rotateBase64Image(dataUrl, 90);
+            resolve(rotated);
+            return;
+          }
+          resolve(dataUrl);
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
+
+    // Catálogo de referencia rápida FNMT y emisiones habituales para autocompletado
+    const CATALOG_HINTS = [
+      { keywords: ['2 pesetas', '1870', 'kilogramo'], country: 'España', year: '1870', type: 'Moneda', denomination: '2 Pesetas (100 Piezas en Kilogramo)', faceValue: '2 PTA', composition: 'Plata .835 (10,00 g · 27 mm)', mint: 'Madrid (Estrellas 6 puntas)', grade: 'BC', est: 26 },
+      { keywords: ['5 pesetas', 'duro', 'alfonso'], country: 'España', year: '1898', type: 'Moneda', denomination: '5 Pesetas (Duro)', faceValue: '5 PTA', composition: 'Plata .900 (25,00 g · 37 mm)', mint: 'Madrid (Estrella 6 puntas)', grade: 'MBC', est: 32 },
+      { keywords: ['1 peseta', 'franco', '1947', '1953', '1963', '1966'], country: 'España', year: '1966', type: 'Moneda', denomination: '1 Peseta (Rubia)', faceValue: '1 PTA', composition: 'Bronce de aluminio (3,50 g · 21 mm)', mint: 'Madrid (Estrella)', grade: 'MBC', est: 1.5 },
+      { keywords: ['100 pesetas', '1966', 'plata'], country: 'España', year: '1966', type: 'Moneda', denomination: '100 Pesetas', faceValue: '100 PTA', composition: 'Plata .800 (19,00 g · 34 mm)', mint: 'Madrid (Estrella)', grade: 'EBC', est: 18 },
+      { keywords: ['2 euro', '2 euros', 'conmemorativa', 'fnmt'], country: 'España', year: '2022', type: 'Moneda', denomination: '2 Euros Conmemorativa FNMT', faceValue: '2 EUR', composition: 'Bimetálica Cuproníquel / Latón (8,50 g)', mint: 'Madrid (M coronada · FNMT)', grade: 'SC', est: 4.5 },
+      { keywords: ['forint', 'forinto', 'hungria', 'hungary', 'magyar'], country: 'Hungría', year: '2015', type: 'Billete', denomination: '1000 Forint', faceValue: '1000 HUF', composition: 'Papel algodón con marca de agua e hilo de seguridad', mint: 'Magyar Nemzeti Bank (Budapest)', grade: 'EBC', est: 4.0 }
+    ];
+
+    async function runCatalogIdentification() {
+      const form = getCurrentFormValues();
+      if (!form.obverseImg || !form.reverseImg) {
+        showToast('Sube primero las fotografías de Anverso y Reverso.');
+        return;
+      }
+
+      showToast('Consultando catálogos oficiales (FNMT) y analizando piezas...');
+
+      // Detectar si las imágenes son panorámicas (billete) o cuadradas/circulares (moneda)
+      const detectTypeFromImg = () => new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const r = img.width / img.height;
+          if (r > 1.48 || r < 0.68) resolve('Billete');
+          else resolve('Moneda');
+        };
+        img.onerror = () => resolve('Moneda');
+        img.src = form.obverseImg;
+      });
+
+      const detectedType = await detectTypeFromImg();
+
+      // Orientar automáticamente anverso y reverso para exposición
+      const orientedObv = await autoOrientImage(form.obverseImg, detectedType);
+      const orientedRev = await autoOrientImage(form.reverseImg, detectedType);
+
+      // Buscar coincidencia con pistas escritas si existen
+      const blobText = normalizeStr(`${form.country} ${form.denomination} ${form.year} ${form.notes}`);
+      let match = CATALOG_HINTS.find(h => h.keywords.some(k => blobText.includes(k)));
+
+      if (!match) {
+        match = detectedType === 'Billete'
+          ? {
+              country: form.country || 'España',
+              year: form.year || '1992',
+              type: 'Billete',
+              denomination: form.denomination || 'Billete de curso legal',
+              faceValue: form.faceValue || '1000 PTA',
+              composition: 'Papel fiduciario de fibra de algodón',
+              mint: 'FNMT — Real Casa de la Moneda',
+              grade: 'MBC',
+              est: 12.00
+            }
+          : {
+              country: form.country || 'España',
+              year: form.year || '1982',
+              type: 'Moneda',
+              denomination: form.denomination || 'Moneda acuñada',
+              faceValue: form.faceValue || '5 PTA',
+              composition: 'Cuproníquel (75% Cu, 25% Ni)',
+              mint: 'Madrid (M coronada · FNMT)',
+              grade: 'MBC',
+              est: 3.50
+            };
+      }
+
+      state.draftForm = {
+        ...form,
+        obverseImg: orientedObv,
+        reverseImg: orientedRev,
+        type: match.type,
+        country: form.country || match.country,
+        year: form.year || match.year,
+        denomination: form.denomination || match.denomination,
+        faceValue: form.faceValue || match.faceValue,
+        composition: form.composition || match.composition,
+        mint: form.mint || match.mint,
+        grade: form.grade || match.grade,
+        estimatedValue: form.estimatedValue !== '' ? form.estimatedValue : match.est
+      };
+
+      render();
+      showToast(`Identificado como ${match.type} · Imágenes orientadas para vitrina.`);
+    }
+
+    /*************************************************************************
+     * 7. NAVEGACIÓN Y HELPERS DE FORMULARIO
+     *************************************************************************/
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => el.classList.add('hidden'), 3200);
+    }
+
+    function openImageModal(src, title) {
+      if (!src) return;
+      document.getElementById('image-modal-src').src = src;
+      document.getElementById('image-modal-title').textContent = title || 'Vista ampliada';
+      document.getElementById('image-modal').classList.remove('hidden');
+    }
+
+    function closeImageModal() {
+      document.getElementById('image-modal').classList.add('hidden');
+    }
+
+    function navigate(view, params = {}) {
+      state.view = view;
+      if (params.pieceId !== undefined) state.selectedPieceId = params.pieceId;
+      if (params.editId !== undefined) {
+        state.editingPieceId = params.editId;
+        const existing = state.pieces.find(p => p.id === params.editId);
+        state.draftForm = existing ? { ...existing } : null;
+      } else if (view === 'add' && !params.keepDraft) {
+        state.editingPieceId = null;
+        state.draftForm = {
+          type: 'Moneda',
+          customType: '',
+          country: '',
+          year: '',
+          denomination: '',
+          faceValue: '',
+          grade: 'MBC',
+          quantity: 1,
+          composition: '',
+          mint: '',
+          purchasePrice: '',
+          estimatedValue: '',
+          provenance: '',
+          notes: '',
+          obverseImg: '',
+          reverseImg: ''
+        };
+      }
+      if (params.collectionTab) state.collectionTab = params.collectionTab;
+      if (params.filterCountry !== undefined) {
+        state.searchFilters.country = params.filterCountry;
+      }
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateNavHighlight() {
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('bg-oro', 'text-grafito', 'font-bold');
+        btn.classList.add('text-textoClaro', 'hover:bg-grafitoClaro');
+      });
+      const mapView = {
+        home: 'nav-home',
+        collection: 'nav-collection',
+        detail: 'nav-collection',
+        virtual: 'nav-home',
+        stats: 'nav-home',
+        add: 'nav-add',
+        search: 'nav-search',
+        settings: 'nav-settings'
+      };
+      const activeId = mapView[state.view];
+      if (activeId) {
+        const el = document.getElementById(activeId);
+        if (el) {
+          el.classList.remove('text-textoClaro', 'hover:bg-grafitoClaro');
+          el.classList.add('bg-oro', 'text-grafito', 'font-bold');
+        }
+      }
+    }
+
+    /*************************************************************************
+     * 8. VISTAS DE LA APLICACIÓN
+     *************************************************************************/
+
+    // --- VISTA 1: INICIO (Con Planisferio Interactivo en Gama de Grises) ---
+    function renderHome() {
+      const totalUnits = state.pieces.reduce((acc, p) => acc + (Number(p.quantity) || 1), 0);
+      const totalCoins = state.pieces
+        .filter(p => p.type === 'Moneda')
+        .reduce((acc, p) => acc + (Number(p.quantity) || 1), 0);
+      const totalNotes = state.pieces
+        .filter(p => p.type === 'Billete')
+        .reduce((acc, p) => acc + (Number(p.quantity) || 1), 0);
+      const totalSpecial = state.pieces
+        .filter(p => p.type !== 'Moneda' && p.type !== 'Billete')
+        .reduce((acc, p) => acc + (Number(p.quantity) || 1), 0);
+
+      const countryMap = {};
+      state.pieces.forEach(p => {
+        const c = (p.country || 'Sin especificar').trim();
+        if (!countryMap[c]) countryMap[c] = 0;
+        countryMap[c] += Number(p.quantity) || 1;
+      });
+      const uniqueCountries = Object.keys(countryMap);
+      const totalEstimated = state.pieces.reduce(
+        (acc, p) => acc + (Number(p.estimatedValue) || 0) * (Number(p.quantity) || 1),
+        0
+      );
+
+      setTimeout(() => drawInteractiveWorldMap(countryMap), 30);
+
+      return `
+        <div class="space-y-4">
+          <!-- Panel Resumen de Vitrina -->
+          <section class="panel-grafito p-4">
+            <div class="flex items-center justify-between border-b border-oro/30 pb-2 mb-3">
+              <h2 class="font-museo text-xl font-bold text-oro">Resumen del Monetario</h2>
+              <span class="text-xs text-grisSecundario tabular-nums-strict">
+                Valor est.: <strong class="text-oro">${totalEstimated.toFixed(2)} €</strong>
+              </span>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-center">
+              <div class="bg-grafitoClaro rounded-xl p-2.5 border border-oro/25">
+                <div class="text-[11px] uppercase tracking-wider text-grisSecundario">Total Piezas</div>
+                <div class="text-2xl font-bold text-oro tabular-nums-strict mt-0.5">${totalUnits}</div>
+              </div>
+              <div class="bg-grafitoClaro rounded-xl p-2.5 border border-oro/25">
+                <div class="text-[11px] uppercase tracking-wider text-grisSecundario">Monedas</div>
+                <div class="text-2xl font-bold text-textoClaro tabular-nums-strict mt-0.5">${totalCoins}</div>
+              </div>
+              <div class="bg-grafitoClaro rounded-xl p-2.5 border border-oro/25">
+                <div class="text-[11px] uppercase tracking-wider text-grisSecundario">Billetes</div>
+                <div class="text-2xl font-bold text-textoClaro tabular-nums-strict mt-0.5">${totalNotes}</div>
+              </div>
+              <div class="bg-grafitoClaro rounded-xl p-2.5 border border-oro/25">
+                <div class="text-[11px] uppercase tracking-wider text-grisSecundario">Especiales</div>
+                <div class="text-2xl font-bold text-textoClaro tabular-nums-strict mt-0.5">${totalSpecial}</div>
+              </div>
+              <div class="col-span-2 sm:col-span-1 bg-grafitoClaro rounded-xl p-2.5 border border-oro/25">
+                <div class="text-[11px] uppercase tracking-wider text-grisSecundario">Países</div>
+                <div class="text-2xl font-bold text-oro tabular-nums-strict mt-0.5">${uniqueCountries.length}</div>
+              </div>
+            </div>
+
+            <!-- Accesos rápidos según esquema -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+              <button onclick="navigate('collection', { collectionTab: 'Moneda' })" class="btn-oro py-2 px-3 text-xs flex items-center justify-center gap-1.5">
+                <span>🪙</span> Monedas
+              </button>
+              <button onclick="navigate('collection', { collectionTab: 'Billete' })" class="btn-oro py-2 px-3 text-xs flex items-center justify-center gap-1.5">
+                <span>💵</span> Billetes
+              </button>
+              <button onclick="navigate('search')" class="btn-secundario py-2 px-3 text-xs flex items-center justify-center gap-1.5">
+                <span>🔍</span> Buscar
+              </button>
+              <button onclick="navigate('stats')" class="btn-secundario py-2 px-3 text-xs flex items-center justify-center gap-1.5">
+                <span>📈</span> Informes
+              </button>
+            </div>
+          </section>
+
+          <!-- Planisferio Interactivo de la Colección -->
+          <section class="panel-grafito p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-oro/30 pb-2 mb-3">
+              <div>
+                <h2 class="font-museo text-xl font-bold text-oro">Planisferio de la Colección</h2>
+                <p class="text-xs text-grisSecundario">Países con monedas o billetes registrados · Pulsa un país iluminado para filtrarlo</p>
+              </div>
+              <button onclick="navigate('add')" class="btn-oro px-3 py-1.5 text-xs">+ Nueva pieza</button>
+            </div>
+
+            <div id="world-map-container" class="w-full h-64 sm:h-80 bg-[#1A1B1C] rounded-xl border border-oro/30 overflow-hidden relative flex items-center justify-center">
+              <span class="text-xs text-grisSecundario">Cargando cartografía mundial...</span>
+            </div>
+
+            <!-- Leyenda interactiva de países en colección -->
+            <div class="mt-3 flex flex-wrap gap-1.5">
+              ${
+                uniqueCountries.length === 0
+                  ? '<span class="text-xs text-grisSecundario italic">Aún no hay países registrados. Añade tu primera pieza para iluminar el mapa.</span>'
+                  : uniqueCountries
+                      .map(country => {
+                        const color = getCountryColor(country);
+                        const count = countryMap[country];
+                        return `
+                          <button
+                            onclick="filterByCountryFromMap('${country.replace(/'/g, "\\'")}')"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-grafitoClaro border border-oro/30 hover:border-oro text-textoClaro transition"
+                          >
+                            <span class="w-2.5 h-2.5 rounded-full inline-block" style="background:${color}"></span>
+                            <span>${country}</span>
+                            <span class="text-oro font-bold tabular-nums-strict">(${count})</span>
+                          </button>
+                        `;
+                      })
+                      .join('')
+              }
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
+    function filterByCountryFromMap(country) {
+      state.searchFilters.country = country;
+      navigate('search', { filterCountry: country });
+    }
+
+    async function drawInteractiveWorldMap(countryMap) {
+      const container = document.getElementById('world-map-container');
+      if (!container || typeof d3 === 'undefined' || typeof topojson === 'undefined') return;
+
+      const highlightedByIso = {};
+      Object.entries(countryMap).forEach(([countryName, count]) => {
+        const iso = normalizeCountryToIsoNum(countryName);
+        if (iso) {
+          highlightedByIso[iso] = {
+            name: countryName,
+            count,
+            color: getCountryColor(countryName)
+          };
+        }
+      });
+
+      try {
+        if (!window._worldTopoCache) {
+          const resp = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+          window._worldTopoCache = await resp.json();
+        }
+        const world = window._worldTopoCache;
+        const countries = topojson.feature(world, world.objects.countries).features.filter(d => String(d.id) !== '010');
+
+        const width = container.clientWidth || 640;
+        const height = container.clientHeight || 280;
+
+        container.innerHTML = '';
+        const svg = d3
+          .select(container)
+          .append('svg')
+          .attr('viewBox', `0 0 ${width} ${height}`)
+          .attr('class', 'w-full h-full select-none');
+
+        const g = svg.append('g');
+        const projection = d3.geoNaturalEarth1().fitSize([width - 16, height - 16], {
+          type: 'FeatureCollection',
+          features: countries
+        });
+        projection.translate([width / 2, height / 2 + 6]);
+        const path = d3.geoPath().projection(projection);
+
+        // Tooltip flotante
+        const tooltip = d3
+          .select(container)
+          .append('div')
+          .attr('class', 'pointer-events-none absolute hidden bg-grafito text-textoClaro text-xs px-2.5 py-1 rounded border border-oro shadow-lg z-10');
+
+        g.selectAll('path')
+          .data(countries)
+          .enter()
+          .append('path')
+          .attr('d', path)
+          .attr('stroke', '#1A1B1C')
+          .attr('stroke-width', 0.6)
+          .attr('fill', d => {
+            const idStr = String(d.id).padStart(3, '0');
+            const byName = d.properties && d.properties.name ? normalizeCountryToIsoNum(d.properties.name) : null;
+            const info = highlightedByIso[idStr] || (byName ? highlightedByIso[byName] : null);
+            return info ? info.color : '#46484A';
+          })
+          .style('cursor', d => {
+            const idStr = String(d.id).padStart(3, '0');
+            const byName = d.properties && d.properties.name ? normalizeCountryToIsoNum(d.properties.name) : null;
+            return (highlightedByIso[idStr] || (byName && highlightedByIso[byName])) ? 'pointer' : 'default';
+          })
+          .on('mousemove', function (event, d) {
+            const idStr = String(d.id).padStart(3, '0');
+            const byName = d.properties && d.properties.name ? normalizeCountryToIsoNum(d.properties.name) : null;
+            const info = highlightedByIso[idStr] || (byName ? highlightedByIso[byName] : null);
+            const label = info
+              ? `<strong style="color:${info.color}">${info.name}</strong>: ${info.count} pieza(s)`
+              : `${(d.properties && d.properties.name) || 'Territorio'} (0 piezas)`;
+            tooltip
+              .html(label)
+              .style('left', Math.min(event.offsetX + 10, width - 150) + 'px')
+              .style('top', Math.max(event.offsetY - 28, 6) + 'px')
+              .classed('hidden', false);
+          })
+          .on('mouseleave', () => tooltip.classed('hidden', true))
+          .on('click', (_, d) => {
+            const idStr = String(d.id).padStart(3, '0');
+            const byName = d.properties && d.properties.name ? normalizeCountryToIsoNum(d.properties.name) : null;
+            const info = highlightedByIso[idStr] || (byName ? highlightedByIso[byName] : null);
+            if (info) filterByCountryFromMap(info.name);
+          });
+
+        // Zoom y arrastre táctil para móviles Android
+        const zoom = d3.zoom().scaleExtent([1, 6]).on('zoom', (event) => {
+          g.attr('transform', event.transform);
+        });
+        svg.call(zoom);
+      } catch (err) {
+        container.innerHTML = `<p class="text-xs text-grisSecundario p-4 text-center">No se pudo cargar la capa cartográfica externa (sin conexión). Usa las etiquetas inferiores para filtrar por país.</p>`;
+      }
+    }
+
+    // --- VISTA 2: COLECCIÓN ---
+    function renderCollection() {
+      const tabs = [
+        { id: 'Todos', label: 'Todos' },
+        { id: 'Moneda', label: 'Monedas' },
+        { id: 'Billete', label: 'Billetes' },
+        { id: 'Especiales', label: 'Especiales' }
+      ];
+
+      const filtered = state.pieces.filter(p => {
+        if (state.collectionTab === 'Todos') return true;
+        if (state.collectionTab === 'Especiales') return p.type !== 'Moneda' && p.type !== 'Billete';
+        return p.type === state.collectionTab;
+      });
+
+      return `
+        <div class="space-y-3">
+          <div class="panel-grafito p-3">
+            <div class="flex items-center justify-between mb-2.5">
+              <h2 class="font-museo text-xl font-bold text-oro">Catálogo de la Colección</h2>
+              <button onclick="navigate('add')" class="btn-oro px-3 py-1 text-xs">+ Añadir</button>
+            </div>
+            <div class="grid grid-cols-4 gap-1.5">
+              ${tabs
+                .map(t => {
+                  const active = state.collectionTab === t.id;
+                  return `
+                    <button
+                      onclick="navigate('collection', { collectionTab: '${t.id}' })"
+                      class="py-1.5 px-2 rounded-full text-xs font-bold transition ${
+                        active ? 'bg-oro text-grafito' : 'bg-grafitoClaro text-textoClaro hover:border-oro border border-transparent'
+                      }"
+                    >
+                      ${t.label}
+                    </button>
+                  `;
+                })
+                .join('')}
+            </div>
+          </div>
+
+          ${
+            filtered.length === 0
+              ? `
+                <div class="panel-grafito p-8 text-center">
+                  <p class="font-editorial text-base text-grisSecundario mb-3">No hay piezas registradas en esta categoría.</p>
+                  <button onclick="navigate('add')" class="btn-oro px-5 py-2 text-xs">Registrar primera pieza</button>
+                </div>
+              `
+              : `
+                <div class="space-y-2.5">
+                  ${filtered
+                    .map(p => {
+                      const typeLabel = p.type === 'Otro' && p.customType ? p.customType : p.type;
+                      return `
+                        <article
+                          onclick="navigate('detail', { pieceId: '${p.id}' })"
+                          class="panel-grafito p-3 flex items-center gap-3 cursor-pointer hover:border-oroHover transition"
+                        >
+                          <div class="flex gap-1.5 shrink-0">
+                            <img
+                              src="${p.obverseImg || makePlaceholderCoinSVG('ANVERSO', p.country || '')}"
+                              alt="Anverso"
+                              class="w-16 h-16 rounded-lg object-cover border border-oro/50 bg-black"
+                            />
+                            <img
+                              src="${p.reverseImg || makePlaceholderCoinSVG('REVERSO', p.year || '')}"
+                              alt="Reverso"
+                              class="w-16 h-16 rounded-lg object-cover border border-oro/50 bg-black"
+                            />
+                          </div>
+
+                          <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                              <span class="text-[11px] uppercase tracking-wider text-oro font-bold">${p.country || 'País sin indicar'} · <span class="tabular-nums-strict">${p.year || 's/f'}</span></span>
+                              <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-oro/20 text-oro border border-oro/40 tabular-nums-strict">${p.grade || 'MBC'}</span>
+                            </div>
+                            <h3 class="font-editorial font-semibold text-sm sm:text-base text-textoClaro truncate mt-0.5">
+                              ${p.denomination || typeLabel}
+                            </h3>
+                            <div class="flex items-center justify-between text-xs text-grisSecundario mt-1 tabular-nums-strict">
+                              <span>${typeLabel} · Cant: <strong class="text-textoClaro">${p.quantity || 1}</strong></span>
+                              <span>Est.: <strong class="text-oro">${Number(p.estimatedValue || 0).toFixed(2)} €</strong></span>
+                            </div>
+                          </div>
+                        </article>
+                      `;
+                    })
+                    .join('')}
+                </div>
+              `
+          }
+        </div>
+      `;
+    }
+
+    // --- VISTA 3: DETALLE DE PIEZA ---
+    function renderDetail() {
+      const piece = state.pieces.find(p => p.id === state.selectedPieceId);
+      if (!piece) {
+        return `
+          <div class="panel-grafito p-6 text-center">
+            <p class="text-sm text-grisSecundario mb-3">Pieza no encontrada.</p>
+            <button onclick="navigate('collection')" class="btn-oro px-4 py-2 text-xs">Volver a Colección</button>
+          </div>
+        `;
+      }
+
+      const typeLabel = piece.type === 'Otro' && piece.customType ? `Otro (${piece.customType})` : piece.type;
+
+      return `
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <button onclick="navigate('collection')" class="btn-secundario px-3.5 py-1.5 text-xs">← Volver</button>
+            <span class="text-xs text-grafito font-bold uppercase tracking-wider">Ficha Catalográfica</span>
+          </div>
+
+          <section class="panel-grafito p-4 space-y-4">
+            <div class="border-b border-oro/30 pb-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs uppercase tracking-widest text-oro font-bold">${piece.country || 'País no especificado'} · <span class="tabular-nums-strict">${piece.year || 'Sin año'}</span></span>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-oro text-grafito tabular-nums-strict">${piece.grade || 'MBC'}</span>
+              </div>
+              <h2 class="font-museo text-2xl font-bold text-textoClaro mt-1">${piece.denomination || typeLabel}</h2>
+              <p class="text-xs text-grisSecundario mt-0.5">${GRADE_DESCRIPTIONS[piece.grade] || ''}</p>
+            </div>
+
+            <!-- Fotografías Anverso y Reverso ampliables -->
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-grafitoClaro p-2 rounded-xl border border-oro/30 text-center">
+                <span class="block text-[11px] uppercase tracking-wider text-oro mb-1.5">Anverso</span>
+                <img
+                  src="${piece.obverseImg || makePlaceholderCoinSVG('ANVERSO', '')}"
+                  alt="Anverso"
+                  onclick="openImageModal(this.src, 'Anverso — ${piece.denomination || piece.country}')"
+                  class="w-full h-44 object-contain rounded-lg bg-black cursor-zoom-in"
+                />
+                <span class="block text-[10px] text-grisSecundario mt-1">Pulsa para ampliar</span>
+              </div>
+              <div class="bg-grafitoClaro p-2 rounded-xl border border-oro/30 text-center">
+                <span class="block text-[11px] uppercase tracking-wider text-oro mb-1.5">Reverso</span>
+                <img
+                  src="${piece.reverseImg || makePlaceholderCoinSVG('REVERSO', '')}"
+                  alt="Reverso"
+                  onclick="openImageModal(this.src, 'Reverso — ${piece.denomination || piece.country}')"
+                  class="w-full h-44 object-contain rounded-lg bg-black cursor-zoom-in"
+                />
+                <span class="block text-[10px] text-grisSecundario mt-1">Pulsa para ampliar</span>
+              </div>
+            </div>
+
+            <!-- Ficha Técnica -->
+            <div class="grid grid-cols-2 gap-2.5 text-xs bg-grafitoClaro p-3 rounded-xl border border-oro/25 tabular-nums-strict">
+              <div><span class="text-grisSecundario block">Tipo de pieza:</span><strong class="text-textoClaro">${typeLabel}</strong></div>
+              <div><span class="text-grisSecundario block">Valor facial:</span><strong class="text-textoClaro">${piece.faceValue || '—'}</strong></div>
+              <div><span class="text-grisSecundario block">Ceca / Emisor:</span><strong class="text-textoClaro">${piece.mint || '—'}</strong></div>
+              <div><span class="text-grisSecundario block">Composición:</span><strong class="text-textoClaro">${piece.composition || '—'}</strong></div>
+              <div><span class="text-grisSecundario block">Cantidad:</span><strong class="text-textoClaro">${piece.quantity || 1} ejemplar(es)</strong></div>
+              <div><span class="text-grisSecundario block">Procedencia:</span><strong class="text-textoClaro">${piece.provenance || '—'}</strong></div>
+              <div><span class="text-grisSecundario block">Coste de compra:</span><strong class="text-textoClaro">${Number(piece.purchasePrice || 0).toFixed(2)} €</strong></div>
+              <div><span class="text-grisSecundario block">Valor estimado:</span><strong class="text-oro">${Number(piece.estimatedValue || 0).toFixed(2)} €</strong></div>
+            </div>
+
+            ${
+              piece.notes
+                ? `
+                  <div class="bg-grafitoClaro p-3 rounded-xl border border-oro/20">
+                    <span class="text-[11px] uppercase tracking-wider text-oro block mb-1">Notas y Comentarios</span>
+                    <p class="font-editorial text-sm text-textoClaro leading-relaxed">${piece.notes}</p>
+                  </div>
+                `
+                : ''
+            }
+
+            <div class="grid grid-cols-2 gap-3 pt-2">
+              <button onclick="navigate('add', { editId: '${piece.id}' })" class="btn-oro py-2.5 text-xs">
+                ✏️ Editar ficha
+              </button>
+              <button onclick="deletePiece('${piece.id}')" class="bg-red-900/80 hover:bg-red-800 text-white font-bold rounded-full py-2.5 text-xs border border-red-400/40 transition">
+                🗑️ Eliminar
+              </button>
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
+    async function deletePiece(id) {
+      if (!confirm('¿Deseas eliminar definitivamente esta pieza de tu colección local?')) return;
+      state.pieces = state.pieces.filter(p => p.id !== id);
+      await persistAllPieces(state.pieces);
+      showToast('Pieza eliminada del catálogo.');
+      navigate('collection');
+    }
+
+    // --- VISTA 4: AÑADIR / EDITAR PIEZA ---
+    function renderAddForm() {
+      const f = state.draftForm || {};
+      const isEdit = Boolean(state.editingPieceId);
+
+      // Listado único de procedencias existentes en la BD para autorrellenado
+      const uniqueProvenances = Array.from(
+        new Set(
+          state.pieces
+            .map(p => (p.provenance || '').trim())
+            .filter(Boolean)
+        )
+      );
+
+      return `
+        <div class="space-y-3">
+          <div class="panel-grafito p-4">
+            <h2 class="font-museo text-2xl font-bold text-oro mb-1">
+              ${isEdit ? 'Editar Pieza Catalogada' : 'Registrar Nueva Pieza'}
+            </h2>
+            <p class="text-xs text-grisSecundario mb-4">
+              Fotografía el anverso y reverso para identificar la pieza y orientar las imágenes automáticamente.
+            </p>
+
+            <form id="piece-form" onsubmit="handleSavePiece(event)" class="space-y-4">
+              <!-- 1. Fotografías obligatorias -->
+              <div class="grid grid-cols-2 gap-3">
+                <div class="bg-grafitoClaro p-2.5 rounded-xl border border-oro/40 text-center">
+                  <label class="block text-xs font-bold text-oro mb-1.5">Foto Anverso *</label>
+                  ${
+                    f.obverseImg
+                      ? `<img id="preview-obverse" src="${f.obverseImg}" class="w-full h-36 object-contain rounded-lg bg-black mb-2 border border-oro/30" />`
+                      : `<div class="w-full h-36 rounded-lg bg-black/50 border border-dashed border-oro/40 flex items-center justify-center text-xs text-grisSecundario mb-2">Sin imagen</div>`
+                  }
+                  <input type="file" accept="image/*" onchange="handlePhotoUpload(event, 'obverse')" class="w-full text-[11px] text-grisSecundario file:mr-2 file:py-1 file:px-2.5 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-oro file:text-grafito" />
+                  ${
+                    f.obverseImg
+                      ? `<button type="button" onclick="manualRotateDraft('obverse')" class="mt-2 btn-secundario px-2.5 py-1 text-[11px]">↻ Girar 90°</button>`
+                      : ''
+                  }
+                </div>
+
+                <div class="bg-grafitoClaro p-2.5 rounded-xl border border-oro/40 text-center">
+                  <label class="block text-xs font-bold text-oro mb-1.5">Foto Reverso *</label>
+                  ${
+                    f.reverseImg
+                      ? `<img id="preview-reverse" src="${f.reverseImg}" class="w-full h-36 object-contain rounded-lg bg-black mb-2 border border-oro/30" />`
+                      : `<div class="w-full h-36 rounded-lg bg-black/50 border border-dashed border-oro/40 flex items-center justify-center text-xs text-grisSecundario mb-2">Sin imagen</div>`
+                  }
+                  <input type="file" accept="image/*" onchange="handlePhotoUpload(event, 'reverse')" class="w-full text-[11px] text-grisSecundario file:mr-2 file:py-1 file:px-2.5 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-oro file:text-grafito" />
+                  ${
+                    f.reverseImg
+                      ? `<button type="button" onclick="manualRotateDraft('reverse')" class="mt-2 btn-secundario px-2.5 py-1 text-[11px]">↻ Girar 90°</button>`
+                      : ''
+                  }
+                </div>
+              </div>
+
+              <!-- Botón de identificación automática en catálogos oficiales -->
+              <button type="button" onclick="runCatalogIdentification()" class="w-full btn-oro py-2.5 px-4 text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md">
+                <span>🏛️</span>
+                <span>Identificar en Catálogos Oficiales (FNMT) y Estimar Estado</span>
+              </button>
+
+              <!-- 2. Datos básicos -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label class="block text-xs text-oro font-bold mb-1">Tipo de pieza</label>
+                  <select id="field-type" onchange="handleTypeChange(this.value)" class="w-full bg-grafitoClaro border border-oro/40 rounded-lg px-3 py-2 text-sm text-textoClaro">
+                    <option value="Moneda" ${f.type === 'Moneda' ? 'selected' : ''}>Moneda</option>
+                    <option value="Billete" ${f.type === 'Billete' ? 'selected' : ''}>Billete</option>
+                    <option value="Especial" ${f.type === 'Especial' ? 'selected' : ''}>Especial / Conmemorativa</option>
+                    <option value="Otro" ${f.type === 'Otro' ? 'selected' : ''}>Otro (Especificar...)</option>
+                  </select>
+                  <div id="custom-type-wrapper" class="${f.type === 'Otro' ? 'mt-2' : 'hidden mt-2'}">
+                    <input
+                      type="text"
+                      id="field-custom-type"
+                      value="${escapeAttr(f.customType)}"
+                      placeholder="Ej. Medalla, Ficha / Token, Lingote..."
+                      class="w-full bg-grafitoClaro border border-oro/50 rounded-lg px-3 py-1.5 text-xs text-textoClaro"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs text-oro font-bold mb-1">País / Autoridad</label>
+                  <input type="text" id="field-country" value="${escapeAttr(f.country)}" placeholder="Ej. España, Hungría..." class="w-full bg-grafitoClaro border border-oro/40 rounded-lg px-3 py-2 text-sm text-textoClaro" />
+                </div>
+
+                <div>
+                  <label class="block text-xs text-oro font-bold mb-1">Año</label>
+                  <input type="text" id="field-year" value="${escapeAttr(f.year)}" placeholder="Ej. 1870" class="w-full bg-grafitoClaro border border-oro/40 rounded-lg px-3 py-2 text-sm text-textoClaro tabular-nums-strict" />
+                </div>
+
+                <div>
+                  <label class="block text-xs text-oro font-bold mb-1">Valor facial</label>
+                  <input type="text" id="field-faceValue" value="${escapeAttr(f.faceValue)}" placeholder="Ej. 2 PTA, 1000 HUF..." class="w-full bg-grafitoClaro border border-oro/40 rounded-lg px-3 py-2 text-sm text-textoClaro tabular-nums-strict" />
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label class="block text-xs text-oro font-bold mb-1">Denominación / Descripción principal</label>
+                  <input type="text" id="field-denomination" value="${escapeAttr(f.denomination)}" placeholder="Ej. 2 Pesetas Gobierno Provisional" class="w-full bg-grafitoClaro border border-oro/40 rounded-lg px-3 py-2 text-sm text-textoClaro" />
+                </div>
+              </div>
+
+              <!-- 3. Conservación y Técnica -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-oro font-bold mb-1">Estado de conservación</label>
+                  <select id="field-grade" class="w-full bg-grafitoClaro border border-oro/40 rounded-lg px-3 py-2 text-sm text-textoClaro tabular-nums-strict">
+                    ${GRADES.map(g => `<option value="${g}" ${f.grade === g ? 'selected' : ''}>${g}</option>`).join('')}
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-xs text-oro font-bold mb-1">Cantidad de ejemplares</label>
+                  <input type="number" min="1" id="field-quantity" value="${f.quantity || 1}" class="w-full bg-grafitoClaro border border-oro/40 rounded-lg px-3 py-2 text-sm text-textoClaro tabular-nums-strict" />
+                </div>
+
+                <div>
+                  <label class="block text-xs text-oro font-bold mb-1">Composición y medidas</label>
+                  <input type="text" id="field-composition" value="${escapeAttr(f.composition)}" placeholder="Ej. Plata .835 (10 g · 27 mm)" class="w-full bg-grafitoClaro border border-oro/40 rounded-lg px-3 py-2 text-sm text-textoClaro" />
+                </div>
+
+                <div>
+                  <label class="block text-xs text-oro font-bold mb-1">Ceca / Casa emisora</label>
+                  <input type="text" id="field-mint" value="${escapeAttr(f.mint)}" placeholder="Ej. Madrid (FNMT)" class="w-full bg-grafitoClaro border border-oro/40 rounded-lg px-3 py-2 text-sm text-textoClaro" />
+                </div>
+              </div>
+
+              <!-- 4. Adquisición y Valoración -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-oro font-bold mb-1">Precio de compra (€) *</label>
+                  <input type="number" step="0.01" min="0" required id="field-purchasePrice" value="${f.purchasePrice !== undefined ? f.purchasePrice : ''}" placeholder="0.00" class="w-full bg-grafitoClaro border border-oro/40 rounded-lg px-3 py-2 text-sm text-textoClaro tabular-nums-strict" />
+                </div>
+
+                <div>
+                  <label class="block text-xs text-oro font-bold mb-1">Valor estimado mercado (€)</label>
+                  <input type="number" step="0.01" min="0" id="field-estimatedValue" value="${f.estimatedValue !== undefined ? f.estimatedValue : ''}" placeholder="0.00" class="w-full bg-grafitoClaro border border-oro/40 rounded-lg px-3 py-2 text-sm text-textoClaro tabular-nums-strict" />
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label class="block text-xs text-oro font-bold mb-1">Procedencia * (Autorrellenado con registros previos)</label>
+                  <input
+                    type="text"
+                    required
+                    list="provenance-list"
+                    id="field-provenance"
+                    value="${escapeAttr(f.provenance)}"
+                    placeholder="Ej. Subasta, Numismática Granada, Herencia familiar..."
+                    class="w-full bg-grafitoClaro border border-oro/40 rounded-lg px-3 py-2 text-sm text-textoClaro"
+                  />
+                  <datalist id="provenance-list">
+                    ${uniqueProvenances.map(prov => `<option value="${escapeAttr(prov)}"></option>`).join('')}
+                  </datalist>
+                  ${
+                    uniqueProvenances.length > 0
+                      ? `
+                        <div class="flex flex-wrap gap-1.5 mt-1.5">
+                          ${uniqueProvenances
+                            .slice(0, 6)
+                            .map(
+                              prov => `
+                                <button
+                                  type="button"
+                                  onclick="selectProvenanceChip('${prov.replace(/'/g, "\\'")}')"
+                                  class="text-[11px] px-2 py-0.5 rounded-full bg-grafitoClaro border border-oro/30 hover:border-oro text-grisSecundario hover:text-textoClaro transition"
+                                >
+                                  ${prov}
+                                </button>
+                              `
+                            )
+                            .join('')}
+                        </div>
+                      `
+                      : ''
+                  }
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label class="block text-xs text-oro font-bold mb-1">Comentarios / Observaciones</label>
+                  <textarea id="field-notes" rows="2" placeholder="Detalles de variante, estrellas, errores de acuñación..." class="w-full bg-grafitoClaro border border-oro/40 rounded-lg px-3 py-2 text-sm text-textoClaro font-editorial">${escapeHtml(f.notes)}</textarea>
+                </div>
+              </div>
+
+              <div class="flex gap-3 pt-2">
+                <button type="button" onclick="navigate('collection')" class="btn-secundario flex-1 py-2.5 text-xs">Cancelar</button>
+                <button type="submit" class="btn-oro flex-[2] py-2.5 text-sm">Guardar en Colección</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+    }
+
+    function escapeAttr(val) {
+      return (val || '').toString().replace(/"/g, '&quot;');
+    }
+    function escapeHtml(val) {
+      return (val || '').toString().replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function selectProvenanceChip(val) {
+      const input = document.getElementById('field-provenance');
+      if (input) input.value = val;
+    }
+
+    function handleTypeChange(val) {
+      const wrap = document.getElementById('custom-type-wrapper');
+      if (wrap) {
+        if (val === 'Otro') wrap.classList.remove('hidden');
+        else wrap.classList.add('hidden');
+      }
+    }
+
+    function getCurrentFormValues() {
+      const base = state.draftForm || {};
+      const typeEl = document.getElementById('field-type');
+      if (!typeEl) return base;
+      return {
+        ...base,
+        type: typeEl.value,
+        customType: (document.getElementById('field-custom-type')?.value || '').trim(),
+        country: (document.getElementById('field-country')?.value || '').trim(),
+        year: (document.getElementById('field-year')?.value || '').trim(),
+        faceValue: (document.getElementById('field-faceValue')?.value || '').trim(),
+        denomination: (document.getElementById('field-denomination')?.value || '').trim(),
+        grade: document.getElementById('field-grade')?.value || 'MBC',
+        quantity: Math.max(1, parseInt(document.getElementById('field-quantity')?.value || '1', 10)),
+        composition: (document.getElementById('field-composition')?.value || '').trim(),
+        mint: (document.getElementById('field-mint')?.value || '').trim(),
+        purchasePrice: document.getElementById('field-purchasePrice')?.value ?? '',
+        estimatedValue: document.getElementById('field-estimatedValue')?.value ?? '',
+        provenance: (document.getElementById('field-provenance')?.value || '').trim(),
+        notes: (document.getElementById('field-notes')?.value || '').trim()
+      };
+    }
+
+    async function handlePhotoUpload(event, side) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      state.draftForm = getCurrentFormValues();
+      const compressed = await compressAndReadImage(file);
+      if (side === 'obverse') state.draftForm.obverseImg = compressed;
+      else state.draftForm.reverseImg = compressed;
+      render();
+    }
+
+    async function manualRotateDraft(side) {
+      state.draftForm = getCurrentFormValues();
+      if (side === 'obverse' && state.draftForm.obverseImg) {
+        state.draftForm.obverseImg = await rotateBase64Image(state.draftForm.obverseImg, 90);
+      } else if (side === 'reverse' && state.draftForm.reverseImg) {
+        state.draftForm.reverseImg = await rotateBase64Image(state.draftForm.reverseImg, 90);
+      }
+      render();
+    }
+
+    async function handleSavePiece(event) {
+      event.preventDefault();
+      const form = getCurrentFormValues();
+
+      if (!form.obverseImg || !form.reverseImg) {
+        showToast('Las fotografías de Anverso y Reverso son obligatorias.');
+        return;
+      }
+
+      const pieceObj = {
+        id: state.editingPieceId || 'pieza-' + Date.now(),
+        type: form.type,
+        customType: form.type === 'Otro' ? form.customType : '',
+        country: form.country || 'Sin especificar',
+        year: form.year || '',
+        denomination: form.denomination || (form.type === 'Otro' && form.customType ? form.customType : form.type),
+        faceValue: form.faceValue || '',
+        grade: form.grade || 'MBC',
+        quantity: Number(form.quantity) || 1,
+        composition: form.composition || '',
+        mint: form.mint || '',
+        purchasePrice: parseFloat(form.purchasePrice) || 0,
+        estimatedValue: parseFloat(form.estimatedValue) || 0,
+        provenance: form.provenance || '',
+        notes: form.notes || '',
+        obverseImg: form.obverseImg,
+        reverseImg: form.reverseImg,
+        createdAt: state.editingPieceId
+          ? (state.pieces.find(p => p.id === state.editingPieceId)?.createdAt || new Date().toISOString())
+          : new Date().toISOString()
+      };
+
+      // Control de duplicados si es una nueva alta
+      if (!state.editingPieceId) {
+        const dup = state.pieces.find(
+          p =>
+            normalizeStr(p.country) === normalizeStr(pieceObj.country) &&
+            normalizeStr(p.year) === normalizeStr(pieceObj.year) &&
+            normalizeStr(p.denomination) === normalizeStr(pieceObj.denomination) &&
+            normalizeStr(p.mint) === normalizeStr(pieceObj.mint) &&
+            p.grade === pieceObj.grade
+        );
+        if (dup) {
+          state.pendingDuplicateAction = { newPiece: pieceObj, existingPiece: dup };
+          document.getElementById('duplicate-modal-text').textContent =
+            `Ya tienes registrada una pieza idéntica: "${dup.denomination}" (${dup.country}, ${dup.year || 's/f'}, estado ${dup.grade}, cantidad actual: ${dup.quantity}). ¿Qué deseas hacer?`;
+          document.getElementById('duplicate-modal').classList.remove('hidden');
+          return;
+        }
+      }
+
+      await finalizeSavePiece(pieceObj);
+    }
+
+    async function resolveDuplicate(action) {
+      document.getElementById('duplicate-modal').classList.add('hidden');
+      const pending = state.pendingDuplicateAction;
+      state.pendingDuplicateAction = null;
+      if (!pending || action === 'cancel') return;
+
+      if (action === 'increment') {
+        state.pieces = state.pieces.map(p =>
+          p.id === pending.existingPiece.id
+            ? { ...p, quantity: (Number(p.quantity) || 1) + (Number(pending.newPiece.quantity) || 1) }
+            : p
+        );
+        await persistAllPieces(state.pieces);
+        showToast('Cantidad actualizada en la ficha existente.');
+        navigate('collection');
+      } else {
+        await finalizeSavePiece(pending.newPiece);
+      }
+    }
+
+    async function finalizeSavePiece(pieceObj) {
+      if (state.editingPieceId) {
+        state.pieces = state.pieces.map(p => (p.id === state.editingPieceId ? pieceObj : p));
+      } else {
+        state.pieces.unshift(pieceObj);
+      }
+      await persistAllPieces(state.pieces);
+      state.editingPieceId = null;
+      state.draftForm = null;
+      showToast('Pieza guardada en el dispositivo.');
+      navigate('collection');
+    }
+
+    // --- VISTA 5: BÚSQUEDA Y FILTROS ---
+    function renderSearch() {
+      const f = state.searchFilters;
+      const results = state.pieces
+        .filter(p => {
+          if (f.country && !normalizeStr(p.country).includes(normalizeStr(f.country))) return false;
+          if (f.type) {
+            if (f.type === 'Otro') {
+              if (p.type !== 'Otro' && p.type !== 'Especial') return false;
+            } else if (p.type !== f.type) return false;
+          }
+          if (f.grade && p.grade !== f.grade) return false;
+          if (f.composition && !normalizeStr(p.composition).includes(normalizeStr(f.composition))) return false;
+          if (f.yearFrom && parseInt(p.year, 10) < parseInt(f.yearFrom, 10)) return false;
+          if (f.yearTo && parseInt(p.year, 10) > parseInt(f.yearTo, 10)) return false;
+          if (f.text) {
+            const hay = normalizeStr(
+              `${p.country} ${p.year} ${p.denomination} ${p.faceValue} ${p.mint} ${p.composition} ${p.provenance} ${p.notes}`
+            );
+            if (!hay.includes(normalizeStr(f.text))) return false;
+          }
+          return true;
+        })
+        .sort((a, b) => {
+          switch (f.sortBy) {
+            case 'year_asc':
+              return (parseInt(a.year, 10) || 0) - (parseInt(b.year, 10) || 0);
+            case 'year_desc':
+              return (parseInt(b.year, 10) || 0) - (parseInt(a.year, 10) || 0);
+            case 'country_asc':
+              return (a.country || '').localeCompare(b.country || '');
+            case 'value_desc':
+              return (Number(b.estimatedValue) || 0) - (Number(a.estimatedValue) || 0);
+            default:
+              return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+          }
+        });
+
+      return `
+        <div class="space-y-3">
+          <section class="panel-grafito p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <h2 class="font-museo text-xl font-bold text-oro">Búsqueda y Filtros Avanzados</h2>
+              <button onclick="resetSearchFilters()" class="text-xs text-oro underline">Limpiar filtros</button>
+            </div>
+
+            <input
+              type="text"
+              value="${escapeAttr(f.text)}"
+              oninput="updateSearchFilter('text', this.value)"
+              placeholder="Buscar por texto libre, ceca, leyenda, nota..."
+              class="w-full bg-grafitoClaro border border-oro/40 rounded-lg px-3 py-2 text-sm text-textoClaro"
+            />
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <input
+                type="text"
+                value="${escapeAttr(f.country)}"
+                oninput="updateSearchFilter('country', this.value)"
+                placeholder="País..."
+                class="bg-grafitoClaro border border-oro/40 rounded-lg px-2.5 py-1.5 text-xs text-textoClaro"
+              />
+              <select onchange="updateSearchFilter('type', this.value)" class="bg-grafitoClaro border border-oro/40 rounded-lg px-2.5 py-1.5 text-xs text-textoClaro">
+                <option value="">Todos los tipos</option>
+                <option value="Moneda" ${f.type === 'Moneda' ? 'selected' : ''}>Moneda</option>
+                <option value="Billete" ${f.type === 'Billete' ? 'selected' : ''}>Billete</option>
+                <option value="Otro" ${f.type === 'Otro' ? 'selected' : ''}>Especiales / Otros</option>
+              </select>
+              <select onchange="updateSearchFilter('grade', this.value)" class="bg-grafitoClaro border border-oro/40 rounded-lg px-2.5 py-1.5 text-xs text-textoClaro">
+                <option value="">Cualquier estado</option>
+                ${GRADES.map(g => `<option value="${g}" ${f.grade === g ? 'selected' : ''}>${g}</option>`).join('')}
+              </select>
+              <input
+                type="text"
+                value="${escapeAttr(f.composition)}"
+                oninput="updateSearchFilter('composition', this.value)"
+                placeholder="Material / Composición..."
+                class="bg-grafitoClaro border border-oro/40 rounded-lg px-2.5 py-1.5 text-xs text-textoClaro"
+              />
+              <input
+                type="number"
+                value="${escapeAttr(f.yearFrom)}"
+                oninput="updateSearchFilter('yearFrom', this.value)"
+                placeholder="Año desde..."
+                class="bg-grafitoClaro border border-oro/40 rounded-lg px-2.5 py-1.5 text-xs text-textoClaro tabular-nums-strict"
+              />
+              <select onchange="updateSearchFilter('sortBy', this.value)" class="bg-grafitoClaro border border-oro/40 rounded-lg px-2.5 py-1.5 text-xs text-textoClaro">
+                <option value="createdAt_desc" ${f.sortBy === 'createdAt_desc' ? 'selected' : ''}>Más recientes</option>
+                <option value="year_asc" ${f.sortBy === 'year_asc' ? 'selected' : ''}>Año (antiguas primero)</option>
+                <option value="year_desc" ${f.sortBy === 'year_desc' ? 'selected' : ''}>Año (modernas primero)</option>
+                <option value="country_asc" ${f.sortBy === 'country_asc' ? 'selected' : ''}>País (A-Z)</option>
+                <option value="value_desc" ${f.sortBy === 'value_desc' ? 'selected' : ''}>Mayor valoración</option>
+              </select>
+            </div>
+          </section>
+
+          <div class="text-xs font-bold text-grafito px-1 tabular-nums-strict">
+            ${results.length} ficha(s) encontrada(s)
+          </div>
+
+          <div class="space-y-2">
+            ${results
+              .map(
+                p => `
+                  <article onclick="navigate('detail', { pieceId: '${p.id}' })" class="panel-grafito p-3 flex items-center gap-3 cursor-pointer hover:border-oroHover">
+                    <img src="${p.obverseImg || makePlaceholderCoinSVG('PIEZA', '')}" class="w-14 h-14 rounded-lg object-cover border border-oro/40 bg-black shrink-0" />
+                    <div class="flex-1 min-w-0">
+                      <div class="flex justify-between text-xs text-oro font-bold">
+                        <span>${p.country} · <span class="tabular-nums-strict">${p.year || 's/f'}</span></span>
+                        <span class="tabular-nums-strict">${p.grade}</span>
+                      </div>
+                      <h3 class="font-editorial text-sm text-textoClaro truncate">${p.denomination}</h3>
+                      <p class="text-[11px] text-grisSecundario truncate">${p.composition || p.mint || ''}</p>
+                    </div>
+                  </article>
+                `
+              )
+              .join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function updateSearchFilter(key, val) {
+      state.searchFilters[key] = val;
+      render();
+    }
+
+    function resetSearchFilters() {
+      state.searchFilters = {
+        text: '',
+        country: '',
+        type: '',
+        grade: '',
+        composition: '',
+        yearFrom: '',
+        yearTo: '',
+        sortBy: 'createdAt_desc'
+      };
+      render();
+    }
+
+    // --- VISTA 6: ESTADÍSTICAS E INFORMES (Exportación CSV y PDF directa) ---
+    function renderStats() {
+      const totalUnits = state.pieces.reduce((s, p) => s + (Number(p.quantity) || 1), 0);
+      const totalCost = state.pieces.reduce((s, p) => s + (Number(p.purchasePrice) || 0) * (Number(p.quantity) || 1), 0);
+      const totalEst = state.pieces.reduce((s, p) => s + (Number(p.estimatedValue) || 0) * (Number(p.quantity) || 1), 0);
+
+      const byCountry = {};
+      const byGrade = {};
+      state.pieces.forEach(p => {
+        const q = Number(p.quantity) || 1;
+        byCountry[p.country || 'Otros'] = (byCountry[p.country || 'Otros'] || 0) + q;
+        byGrade[p.grade || 'MBC'] = (byGrade[p.grade || 'MBC'] || 0) + q;
+      });
+
+      return `
+        <div class="space-y-4">
+          <section class="panel-grafito p-4">
+            <h2 class="font-museo text-2xl font-bold text-oro mb-1">Estadísticas e Informes</h2>
+            <p class="text-xs text-grisSecundario mb-4">Balance patrimonial y distribución técnica de la colección</p>
+
+            <div class="grid grid-cols-3 gap-2 text-center tabular-nums-strict mb-4">
+              <div class="bg-grafitoClaro p-3 rounded-xl border border-oro/25">
+                <span class="text-[11px] text-grisSecundario block">Ejemplares</span>
+                <strong class="text-xl text-textoClaro">${totalUnits}</strong>
+              </div>
+              <div class="bg-grafitoClaro p-3 rounded-xl border border-oro/25">
+                <span class="text-[11px] text-grisSecundario block">Inversión</span>
+                <strong class="text-lg text-textoClaro">${totalCost.toFixed(2)} €</strong>
+              </div>
+              <div class="bg-grafitoClaro p-3 rounded-xl border border-oro/25">
+                <span class="text-[11px] text-grisSecundario block">Valor Est.</span>
+                <strong class="text-lg text-oro">${totalEst.toFixed(2)} €</strong>
+              </div>
+            </div>
+
+            <!-- Exportación compatible con Google Sites iframe (descarga Blob directa) -->
+            <div class="grid grid-cols-2 gap-2.5">
+              <button onclick="exportToCSV()" class="btn-secundario py-2.5 px-3 text-xs flex items-center justify-center gap-1.5">
+                <span>📄</span> Exportar Tabla CSV
+              </button>
+              <button onclick="exportToPDF()" class="btn-oro py-2.5 px-3 text-xs flex items-center justify-center gap-1.5">
+                <span>📑</span> Exportar Informe PDF
+              </button>
+            </div>
+          </section>
+
+          <section class="panel-grafito p-4 space-y-3">
+            <h3 class="font-museo text-lg font-bold text-oro">Distribución por País</h3>
+            ${
+              Object.keys(byCountry).length === 0
+                ? '<p class="text-xs text-grisSecundario">Sin datos registrados.</p>'
+                : Object.entries(byCountry)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([country, count]) => {
+                      const pct = totalUnits ? Math.round((count / totalUnits) * 100) : 0;
+                      return `
+                        <div class="space-y-1 text-xs tabular-nums-strict">
+                          <div class="flex justify-between">
+                            <span>${country}</span>
+                            <span class="text-oro font-bold">${count} (${pct}%)</span>
+                          </div>
+                          <div class="w-full h-2 bg-grafitoClaro rounded-full overflow-hidden">
+                            <div class="h-full bg-oro rounded-full" style="width:${pct}%"></div>
+                          </div>
+                        </div>
+                      `;
+                    })
+                    .join('')
+            }
+          </section>
+
+          <section class="panel-grafito p-4 space-y-3">
+            <h3 class="font-museo text-lg font-bold text-oro">Estados de Conservación</h3>
+            <div class="grid grid-cols-3 gap-2 text-center tabular-nums-strict">
+              ${GRADES.map(g => {
+                const count = byGrade[g] || 0;
+                return `
+                  <div class="bg-grafitoClaro p-2 rounded-lg border border-oro/20">
+                    <span class="text-xs font-bold text-oro block">${g}</span>
+                    <span class="text-sm text-textoClaro">${count}</span>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
+    function exportToCSV() {
+      const headers = ['ID', 'Tipo', 'Pais', 'Año', 'Denominacion', 'Valor_Facial', 'Estado', 'Cantidad', 'Composicion', 'Ceca', 'Coste_EUR', 'Valor_Estimado_EUR', 'Procedencia', 'Notas'];
+      const rows = state.pieces.map(p => [
+        p.id,
+        p.type === 'Otro' && p.customType ? p.customType : p.type,
+        p.country,
+        p.year,
+        p.denomination,
+        p.faceValue,
+        p.grade,
+        p.quantity,
+        p.composition,
+        p.mint,
+        p.purchasePrice,
+        p.estimatedValue,
+        p.provenance,
+        p.notes
+      ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';'));
+
+      const csvContent = '\uFEFF' + [headers.join(';'), ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      triggerDirectDownload(blob, `Inventario_Numismatico_JesusDeLaTorre_${new Date().toISOString().slice(0, 10)}.csv`);
+      showToast('Archivo CSV descargado.');
+    }
+
+    function exportToPDF() {
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        window.print();
+        return;
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape' });
+
+      doc.setFontSize(16);
+      doc.text('Catálogo Numismático — Jesús De la Torre', 14, 16);
+      doc.setFontSize(10);
+      doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-ES')} · Total fichas: ${state.pieces.length}`, 14, 22);
+
+      const body = state.pieces.map(p => [
+        p.country || '',
+        p.year || '',
+        p.type === 'Otro' && p.customType ? p.customType : p.type,
+        p.denomination || '',
+        p.faceValue || '',
+        p.grade || '',
+        String(p.quantity || 1),
+        `${Number(p.estimatedValue || 0).toFixed(2)} €`
+      ]);
+
+      doc.autoTable({
+        startY: 28,
+        head: [['País', 'Año', 'Tipo', 'Denominación', 'Facial', 'Estado', 'Cant.', 'Valor Est.']],
+        body,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [36, 37, 38], textColor: [197, 160, 89] }
+      });
+
+      const pdfBlob = doc.output('blob');
+      triggerDirectDownload(pdfBlob, `Informe_Numismatico_${new Date().toISOString().slice(0, 10)}.pdf`);
+      showToast('Informe PDF generado.');
+    }
+
+    function triggerDirectDownload(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 250);
+    }
+
+    // --- VISTA 7: VISITA VIRTUAL AL MONETARIO ---
+    function renderVirtualGallery() {
+      return `
+        <div class="space-y-3">
+          <div class="panel-grafito p-4 flex items-center justify-between">
+            <div>
+              <h2 class="font-museo text-2xl font-bold text-oro">Visita Virtual al Monetario</h2>
+              <p class="text-xs text-grisSecundario">Exposición de anversos y reversos en vitrina</p>
+            </div>
+            <button onclick="navigate('home')" class="btn-secundario px-3 py-1.5 text-xs">← Inicio</button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            ${
+              state.pieces.length === 0
+                ? '<div class="panel-grafito p-6 text-center col-span-2 text-xs text-grisSecundario">La vitrina está vacía. Añade piezas para exponerlas aquí.</div>'
+                : state.pieces
+                    .map(
+                      p => `
+                        <div class="panel-grafito p-3.5 text-center space-y-2">
+                          <div class="text-xs uppercase tracking-widest text-oro font-bold">${p.country} · <span class="tabular-nums-strict">${p.year || 's/f'}</span></div>
+                          <h3 class="font-museo text-lg font-bold text-textoClaro">${p.denomination}</h3>
+                          <div class="grid grid-cols-2 gap-2 pt-1">
+                            <img
+                              src="${p.obverseImg || makePlaceholderCoinSVG('ANVERSO', '')}"
+                              onclick="openImageModal(this.src, '${p.denomination} (Anverso)')"
+                              class="w-full h-36 object-contain rounded-lg bg-black border border-oro/40 cursor-zoom-in"
+                            />
+                            <img
+                              src="${p.reverseImg || makePlaceholderCoinSVG('REVERSO', '')}"
+                              onclick="openImageModal(this.src, '${p.denomination} (Reverso)')"
+                              class="w-full h-36 object-contain rounded-lg bg-black border border-oro/40 cursor-zoom-in"
+                            />
+                          </div>
+                          <div class="text-[11px] text-grisSecundario pt-1">
+                            Conservación: <strong class="text-oro">${p.grade}</strong> · ${p.mint || ''}
+                          </div>
+                        </div>
+                      `
+                    )
+                    .join('')
+            }
+          </div>
+        </div>
+      `;
+    }
+
+    // --- VISTA 8: AJUSTES Y COPIAS DE SEGURIDAD ---
+    function renderSettings() {
+      return `
+        <div class="space-y-4">
+          <section class="panel-grafito p-4 space-y-3">
+            <h2 class="font-museo text-2xl font-bold text-oro">Ajustes y Respaldo Local</h2>
+            <div class="bg-grafitoClaro p-3 rounded-xl border border-oro/30 text-xs space-y-1">
+              <div><span class="text-grisSecundario">Coleccionista titular:</span> <strong class="text-textoClaro">Jesús De la Torre</strong></div>
+              <div><span class="text-grisSecundario">Motor de almacenamiento:</span> <strong class="text-oro">${storageMode}</strong></div>
+              <div><span class="text-grisSecundario">Entorno de ejecución:</span> <strong class="text-textoClaro">${IS_IFRAME ? 'Incrustado (Google Sites / Iframe)' : 'Navegador Directo / PWA'}</strong></div>
+            </div>
+
+            ${
+              IS_IFRAME
+                ? `<p class="text-xs text-oro/90 bg-oro/10 border border-oro/30 rounded-lg p-2.5">
+                    Estás ejecutando la aplicación dentro de un marco incrustado (como Google Sites). Descarga periódicamente una copia de seguridad en JSON para conservar tus fotografías fuera de la caché del navegador.
+                   </p>`
+                : ''
+            }
+
+            <div class="space-y-2.5 pt-2">
+              <button onclick="exportBackupJSON()" class="w-full btn-oro py-2.5 px-4 text-xs flex items-center justify-center gap-2">
+                <span>💾</span> Descargar Copia de Seguridad Completa (.JSON)
+              </button>
+
+              <label class="w-full btn-secundario py-2.5 px-4 text-xs flex items-center justify-center gap-2 cursor-pointer">
+                <span>📂</span> Restaurar Copia desde archivo (.JSON)
+                <input type="file" accept=".json,application/json" onchange="importBackupJSON(event)" class="hidden" />
+              </label>
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
+    function exportBackupJSON() {
+      const payload = {
+        app: 'NumisMusée',
+        owner: 'Jesús De la Torre',
+        exportedAt: new Date().toISOString(),
+        pieces: state.pieces
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      triggerDirectDownload(blob, `Backup_NumisMusee_${new Date().toISOString().slice(0, 10)}.json`);
+      showToast('Copia de seguridad JSON descargada.');
+    }
+
+    function importBackupJSON(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          const importedPieces = Array.isArray(parsed) ? parsed : parsed.pieces;
+          if (!Array.isArray(importedPieces)) throw new Error('Formato inválido');
+          state.pieces = importedPieces;
+          await persistAllPieces(state.pieces);
+          showToast(`Restauradas ${importedPieces.length} pieza(s) correctamente.`);
+          navigate('home');
+        } catch (err) {
+          showToast('El archivo JSON seleccionado no es válido.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    /*************************************************************************
+     * 9. RENDER PRINCIPAL E INICIALIZACIÓN
+     *************************************************************************/
+    function render() {
+      const main = document.getElementById('main-content');
+      if (!main) return;
+
+      switch (state.view) {
+        case 'collection':
+          main.innerHTML = renderCollection();
+          break;
+        case 'detail':
+          main.innerHTML = renderDetail();
+          break;
+        case 'add':
+          main.innerHTML = renderAddForm();
+          break;
+        case 'search':
+          main.innerHTML = renderSearch();
+          break;
+        case 'stats':
+          main.innerHTML = renderStats();
+          break;
+        case 'virtual':
+          main.innerHTML = renderVirtualGallery();
+          break;
+        case 'settings':
+          main.innerHTML = renderSettings();
+          break;
+        case 'home':
+        default:
+          main.innerHTML = renderHome();
+          break;
+      }
+
+      updateNavHighlight();
+      notifyParentHeight();
+    }
+
+    (async function initApp() {
+      const stored = await loadAllPieces();
+      if (stored.length > 0) {
+        state.pieces = stored;
+      } else if (!localStorage.getItem(INITIAL_FLAG_KEY)) {
+        state.pieces = SAMPLE_PIECES;
+        localStorage.setItem(INITIAL_FLAG_KEY, '1');
+        await persistAllPieces(state.pieces);
+      } else {
+        state.pieces = [];
+      }
+      render();
+    })();
+  </script>
+</body>
+</html>
